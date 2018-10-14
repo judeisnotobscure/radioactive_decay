@@ -87,7 +87,10 @@ if __name__ == "__main__":
     d5.daughter = d6
     d6.daughter = d7
     d7.daughter = d8
-   
+    
+    print("""Radon is a naturally occuring radio isotope found in rocks and soil.
+    \nIt contributes to our background radiation exposure.  
+    \nHere is a look at what happens when the Radon emits radiation by radioactive decay\n""","*"*40)
     rn.chainPrint()
     nodeList = [rn.headval, d2, d3, d4, d5, d6, d7, d8]
     print("*"*40)
