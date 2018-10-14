@@ -1,94 +1,8 @@
 #!/usr/bin/env python3
 import sqlite3
+from sqlite_scratch import *
+from nuclide_class import *
 
-"""
-/////////////////////
-
-Class Declarations
-
-////////////////////
-"""
-class Nuclide:
-#class contains nuclide info prev and next pointers as father and daughter
-    def __init__(self, nuclide, half_life, decay_mode, daughter=None, father=None):
-        self.nuclide = nuclide
-        self.half_life = half_life
-        self.decay_mode = decay_mode
-        self.daughter = daughter
-        self.father = father
-
-
-class DecayChain:
-
-    def __init__(self):
-        self.headval = None
-
-    def appendNuclide(self, nuclide, half_life, decay_mode, daughter=None, father=None):
-        purpose = """ Used to append a nuclide to the end of the linked list.
-        Usage: appendNuclide(nuclide, half_life, decay_mode, daughter, father)
-        
-        args:
-        nuclide = nuclide to append 
-        half_life = half life of the nuclide 
-        decay_mode = mode of decay ie. alpha, beta, gama, positron ect.. 
-        daughter = daughter product as a result of decay (if any)
-        father = parent nuclide which the nuclide is a daughter of (if any)
-        """
-
-        try:
-            newNuclide = Nuclide(nuclide, half_life, decay_mode, daughter, father)
-            if self.headval is None:
-                self.headval = newNuclide
-                return
-            last = self.headval
-            while(last.daughter):
-                last = last.daughter
-            last.daughter = newNuclide
-        except Exception as e:
-            print(purpose, "\nError: ", e)
-
-    def removeNuclide(self, key):
-        purpose = """ Used to remove a nuclide from the chain.
-        Usage: removeNuclide(key)
-
-        args: key = nuclide to remove
-        """
-        try:
-            headVal = self.headval
-            if headVal != None:
-                if headVal.nuclide == key:
-                    self.head = headVal.daughter
-                    headVal = None
-                    return
-            while headVal != None:
-                if headVal.nuclide == key:
-                    break
-                prev = headVal
-                headVal = headVal.daughter
-            if headVal == None:
-                return
-            prev.daughter = headVal.daughter
-            headVal = None
-        except Exception as e:
-            print(purpose, "\nError: ", e)
-
-    def chainPrint(self):
-        purpose = """ Used to print all the nodes in the DecayChain
-        
-        Usage: chainPrint()
-        """
-        try:
-            printval = self.headval
-            while printval != "None":
-                print(printval.nuclide)
-                if printval.decay_mode != "Stable":
-                    print("Decays by {}".format(printval.decay_mode))
-                    print("*"*10)
-                else: 
-                    print("End of Chain: Stable Element")               
-                printval = printval.daughter
-        except Exception as e:
-            print(purpose, "\nError: ", e)
 
 
 """
@@ -137,130 +51,6 @@ def nextGen(list):
 """
 /////////////////////
 
-Sqlite3 connection functions
-
-////////////////////
-"""
-def createConn(db_file):
-    purpose = """ Creates a database connection to sqlite db file passed in as an arg.
-    Usage: createConn(db_file)
-
-    args:
-    db_file = database file 
-    """
-    try: 
-        conn = sqlite3.connect(db_file)
-        return conn
-    except Exception as e:
-        print(purpose, "\nError: ", e)
-
-def createTable(conn, create_table_sql_statement):
-    purpose = """creates a table using the create_table_sql_statement
-    Usage: createTable(conn, create_table_sql_statement)
-
-    args:
-    conn = connection object from createConn()
-    create_table_sql_statement = 
-    """
-    try:
-        c = conn.cursor()
-        c.execute(create_table_sql_statement)
-    except Exception as e:
-        print(purpose, "Error: ", e)
-
-
-def table_insert(conn, list, nodeList):
-    purpose = """ insert data into two tables: "rn_decay" and "linked_list" using sql statements:
-    Usage: table_insert(conn, list, nodeList)
-
-    args:
-    conn = connection from main
-    list = dec (data for rn_decay)
-    nodeLIst = nodeList (data for linked_list)
-    """
-    c = conn.cursor()
-    try:
-        for i in range(0, len(dec)):
-            sql_statement_rad_decay = """INSERT INTO rn_decay (nuclide, half_life, decay_mode, daughter, father)
-            VALUES("{0}", "{1}", "{2}", "{3}", "{4}")
-            """.format(list[i][0], list[i][1], list[i][2], list[i][3], list[i][4])
-            c.execute(sql_statement_rad_decay)
-            
-        inc = 0
-        for i in range(0, len(nodeList)):
-            sql_statement_linked_list = """INSERT INTO linked_list (node)
-            VALUES("{}")
-            """.format(nodeList[i])
-            c.execute(sql_statement_linked_list)
-    except Exception as e:
-        print(purpose, "Error: ", e)
-    
-
-def displayData(conn, table):
-    c = conn.cursor()
-    sql = """SELECT * FROM {}
-    """.format(table)
-    try:
-        c.execute(sql)
-        rows = c.fetchall()
-    except Exception as e:
-        print("Error: ", e)
-    for row in rows:
-        print(row)
-
-    """
-////////////////////
-Main Sqlite Connection
-///////////////////
-    """
-def main_sql():
-    purpose = """ opens database connection and creates tables to store nuclide data
-    Usage: openDb()
-    
-    args: NONE
-    """
-    database = "rad_decay.db"
-
-    sql_create_rn_decay = """CREATE TABLE IF NOT EXISTS rn_decay (
-        id integer PRIMARY KEY AUTOINCREMENT,
-        nuclide text NOT NULL,
-        half_life text NOT NULL, 
-        decay_mode text NOT NULL, 
-        daughter text NOT NULL,
-        father text NOT NULL
-        )"""
-
-    sql_create_linked_list_table = """CREATE TABLE IF NOT EXISTS linked_list(
-        id integer PRIMARY KEY AUTOINCREMENT,
-        node
-        )
-        """
-    conn = createConn(database)
-    if conn != None:
-        createTable(conn, sql_create_rn_decay)
-        createTable(conn, sql_create_linked_list_table)
-    else: 
-        print(purpose,"\nError:  Can't create DB connection")
-    
-    # populate tables
-    table_insert(conn, dec, nodeList)
-
-    # display a table
-    print("SQLite table data:")
-    displayData(conn, "rn_decay")
-    print("\nNuclide Instances")
-    print("*"*40)
-    displayData(conn, "linked_list")
-
-    # close db connection
-    conn.commit()
-    conn.close()
-    
-
-
-"""
-/////////////////////
-
 Main Code Starts here
 
 ////////////////////
@@ -303,7 +93,55 @@ if __name__ == "__main__":
     print("*"*40)
     print("*"*40,"\n\n")
 
-    main_sql()
-    
-    
-    
+
+    """
+////////////////////
+Main Sqlite Connection
+///////////////////
+    """
+    sql_create_rn_decay = """CREATE TABLE IF NOT EXISTS rn_decay (
+        id integer PRIMARY KEY AUTOINCREMENT,
+        nuclide text NOT NULL,
+        half_life text NOT NULL, 
+        decay_mode text NOT NULL, 
+        daughter text NOT NULL,
+        father text NOT NULL)"""
+
+    sql_create_linked_list_table = """CREATE TABLE IF NOT EXISTS linked_list(
+        id integer PRIMARY KEY AUTOINCREMENT,
+        node)"""
+
+    sql_create_decay_mode_table = """CREATE TABLE IF NOT EXISTS decay_mode(
+        id integer PRIMARY KEY AUTOINCREMENT,
+        decay_id text NOT NULL,
+        decay_type)"""
+
+    sql_statement_read = """SELECT * FROM rn_decay JOIN decay_mode ON decay_mode.decay_id = rn_decay.decay_mode"""
+
+    decay_mode_list = ["Alpha", "Beta", "Electron_Capture", "Neutron", "Stable"]
+
+    decay = Sql("decay.db")
+    decay.create_conn()
+    decay.write_table(sql_create_rn_decay)
+    decay.write_table(sql_create_linked_list_table)
+    decay.write_table(sql_create_decay_mode_table) 
+    for i in range(0, len(decay_mode_list)):
+        decay.write_table("""INSERT INTO decay_mode (decay_id, decay_type)
+        VALUES("{}", "{}")
+        """.format(i+1, decay_mode_list[i]))
+
+    for i in range(0, len(dec)):
+        if dec[i][2] == "Alpha":
+            decay_type = 1
+        elif dec[i][2] == "Beta":
+            decay_type = 2
+        else:
+            decay_type = 5
+        decay.write_table("""INSERT INTO rn_decay (nuclide, half_life, decay_mode, daughter, father)
+            VALUES("{0}", "{1}", "{2}", "{3}", "{4}")
+            """.format(dec[i][0], dec[i][1], decay_type, dec[i][3], dec[i][4]))
+    decay.write_table("""INSERT INTO linked_list (node)
+            VALUES("{}")
+            """.format(nodeList[i]))
+    decay.read_table(sql_statement_read)
+    decay.close_conn()
